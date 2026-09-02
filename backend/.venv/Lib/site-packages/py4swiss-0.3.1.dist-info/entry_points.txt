@@ -1,0 +1,2 @@
+[console_scripts]
+py4swiss = py4swiss.main:main

@@ -1,0 +1,132 @@
+Metadata-Version: 2.4
+Name: py4swiss
+Version: 0.3.1
+Summary: A package to pair swiss tournaments
+Author-email: Moritz Eckert <MoritzEckert@web.de>
+License: MIT
+Project-URL: Homepage, https://github.com/Moritz72/py4swiss
+Project-URL: Repository, https://github.com/Moritz72/py4swiss
+Keywords: swiss,pairing,chess,tournament
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.11
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: Games/Entertainment :: Board Games
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: pydantic>=2.11.9
+Provides-Extra: dev
+Requires-Dist: pytest>=7.2; extra == "dev"
+Requires-Dist: pytest-cov>=7.0.0; extra == "dev"
+Requires-Dist: mypy>=1.0; extra == "dev"
+Requires-Dist: ruff>=0.14; extra == "dev"
+Requires-Dist: black>=24.0; extra == "dev"
+Dynamic: license-file
+
+# ♟️ py4swiss
+
+[![CI](https://github.com/Moritz72/py4swiss/actions/workflows/ci.yml/badge.svg)](https://github.com/Moritz72/py4swiss/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Moritz72/py4swiss/branch/main/graph/badge.svg)](https://codecov.io/gh/Moritz72/py4swiss)
+[![Python 3.11](https://img.shields.io/badge/python-3.11+-blue)](https://img.shields.io/badge/python-3.11+-blue)
+[![Ruff](https://img.shields.io/badge/linting-ruff-blue)](https://github.com/astral-sh/ruff)
+[![mypy](https://img.shields.io/badge/types-mypy-blue)](https://github.com/python/mypy)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+*py4swiss* is a python package for pairing Swiss-system chess tournaments.
+
+The code is heavily inspired by [bbpPairings](https://github.com/BieremaBoyzProgramming/bbpPairings)
+and also directly utitlizes the maximum weight matching algorithm implemented there.
+
+Supports Windows, Linux (Ubuntu), and macOS.
+
+## 📄 Tournament Report File
+
+For generation of pairings, an input file containing the entire history of the tournament up until this point is
+required.
+This file needs to be a **TRF(x)** as defined by the
+[javafo User Manual](https://www.rrweb.org/javafo/aum/JaVaFo2_AUM.htm).
+
+When parsing, malformed lines (with an incomplete or invalid code) will be skipped by default.
+Use `--strict` to enable stricter parsing, if desired.
+
+Note that unlike *javafo*, if no initial color is provided, *py4swiss* will default to `white1` instead of choosing
+randomly.
+
+## 📦 Installation
+
+You can install this package directly from PyPI using `pip` via
+
+```bash
+pip install py4swiss
+```
+
+If you prefer, you can also install the latest version from the source repository via
+
+```bash
+git clone https://github.com/Moritz72/py4swiss.git
+cd py4swiss
+pip install .
+```
+
+Pre-built binary files for each supported OS are also available in the
+[Releases section](https://github.com/Moritz72/py4swiss/releases).
+
+## ⚙ Usage
+
+To generate pairings for a given tournament, run
+
+```bash
+py4swiss -t <trf-file>
+```
+
+Additional arguments can be specified for more precise control.
+
+| Argument         | Description                             | Default        |
+|------------------|-----------------------------------------|----------------|
+| `-e, --engine`   | Pairing engine                          | `dutch`        |
+| `-p, --pairings` | Output file for pairings                | `pairings.txt` |
+| `-s, --strict`   | Enable strict parsing mode              | `False`        |
+
+## 🧩 Variants
+
+### FIDE Dutch System
+
+Pairing engine: `dutch`
+
+This variant implements the [(Swiss) Dutch System](https://handbook.fide.com/chapter/C0403Till2026) (until 2026)
+rules by FIDE.
+It was tested against and produces results identical to
+[bbpPairings](https://github.com/BieremaBoyzProgramming/bbpPairings).
+
+### FIDE Dubov System
+
+Pairing engine: `dubov`
+
+This variant implements the [(Swiss) Dubov System](https://handbook.fide.com/chapter/C040401202602) (from 2026)
+rules by FIDE.
+It was tested against and produces results identical to
+[CPPDubovSystem](https://github.com/MichaelVShapiro/CPPDubovSystem) in most cases.
+Note, however, that neither implementation is mature at this point in time.
+
+### FIDE Burstein System
+
+Pairing engine: `burstein`
+
+This variant implements the [(Swiss) Burstein System](https://handbook.fide.com/chapter/C040402202602) (from 2026)
+rules by FIDE.
+Note, however, that this implementation is not mature at this point in time.
+
+## 🧪 Tests
+
+In order to run some tests, `bbpPairings.exe` as well as `CPPDubovSystem` need to be in the environment.
+You can download `bbpPairings.exe` directly from
+[here](https://github.com/BieremaBoyzProgramming/bbpPairings/releases/tag/v5.0.1)
+while `CPPDubovSystem` needs to be built from [source](https://github.com/MichaelVShapiro/CPPDubovSystem).
+
+After that you can run the tests using `pytest`.
+
+## 📜 License
+
+This project is licensed under the [MIT License](LICENSE).
+The contents of `/cpp`, however, were copied from [bbpPairings](https://github.com/BieremaBoyzProgramming/bbpPairings)
+and are thus licensed under the [Apache License 2.0](licenses/Apache-2.0.txt).
