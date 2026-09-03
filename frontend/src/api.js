@@ -1,9 +1,25 @@
 // API client for the Swiss-Manager Flask backend.
-const BASE = (location.port === "5173") ? "" : "";  // dev uses Vite proxy; prod same-origin
-const API = BASE + "/api";
+// Works however you run the UI:
+//   - served by Flask on :5000  -> same-origin /api
+//   - Vite dev server on :5173  -> talk to Flask directly (CORS is enabled)
+//   - opened as a file://        -> talk to Flask directly
+function apiBase() {
+  const { protocol, port, origin } = location;
+  if (protocol === "file:") return "http://127.0.0.1:5000/api";
+  if (port === "5000") return "/api";
+  if (port === "5173") return "http://127.0.0.1:5000/api";
+  return origin + "/api";
+}
+const API = apiBase();
 
 async function j(url, opts) {
-  const res = await fetch(url, opts);
+  let res;
+  try {
+    res = await fetch(url, opts);
+  } catch (e) {
+    // Network-level failure ("Failed to fetch") = backend not reachable.
+    throw new Error(`Cannot reach the backend at ${API}. Start it first: in the backend folder run  flask --app app.server run --port 5000`);
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data.status === false) {
     throw new Error(data.text || `HTTP ${res.status}`);
