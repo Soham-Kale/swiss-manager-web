@@ -28,7 +28,9 @@ DEFAULT_TIEBREAKS = ["Buchholz", "Buchholz Cut-1", "Sonneborn-Berger", "Direct E
 # UI result codes -> engine GameResult value
 _RESULT_MAP = {
     "1:0": "1-0", "0:1": "0-1", "½:½": "0.5-0.5", "0.5:0.5": "0.5-0.5",
-    "1F:0F": "1-0F", "0F:1F": "0-1F", "0F:0F": "0-0",
+    "1F:0F": "1-0F", "0F:1F": "0-1F", "0F:0F": "0-0", "0:0": "0-0",
+    # Unrated results score the same points (we don't track the rated flag here):
+    "1U:0U": "1-0", "0U:1U": "0-1", "½:½U": "0.5-0.5",
     "1-0": "1-0", "0-1": "0-1", "0.5-0.5": "0.5-0.5", "1-0F": "1-0F", "0-1F": "0-1F", "0-0": "0-0",
 }
 

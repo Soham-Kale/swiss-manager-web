@@ -3,7 +3,7 @@ import { api } from "../api.js";
 
 const RES_LABEL = { "1-0": "1 - 0", "0-1": "0 - 1", "0.5-0.5": "½ - ½", "1-0F": "1F - 0F", "0-1F": "0F - 1F", "0-0": "0F - 0F", "pending": "" };
 
-export default function PairingsWindow({ tournament, round, setRound, onEnterResults, onClose, notify }) {
+export default function PairingsWindow({ tournament, round, setRound, onEnterResults, onClose, notify, onGenerateNext }) {
   const [data, setData] = useState(null);
   const load = async (n) => {
     try { setData(await api.getRound(tournament.id, n)); }
@@ -12,10 +12,7 @@ export default function PairingsWindow({ tournament, round, setRound, onEnterRes
   useEffect(() => { load(round); /* eslint-disable-next-line */ }, [round, tournament]);
 
   const rounds = tournament.rounds.map(r => r.number);
-  const gen = async () => {
-    try { const d = await api.nextRound(tournament.id, tournament.pairing_engine || "dutch"); setRound(d.number); notify(`Round ${d.number} paired`); }
-    catch (e) { notify(e.message, true); }
-  };
+  const gen = () => onGenerateNext && onGenerateNext();
   const exportExcel = () => {
     if (!data) return;
     const head = ["Bo.", "SNo.", "White", "Pts", "Res.", "Pts", "Black", "SNo."];

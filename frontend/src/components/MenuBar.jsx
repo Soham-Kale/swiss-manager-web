@@ -1,39 +1,114 @@
 import React, { useState, useRef, useEffect } from "react";
 
-// Menu structure mirrors Swiss-Manager. Items with an `action` are wired; the
-// rest are shown (faithful to the real menu) but inert in this build.
+// Menus mirror Swiss-Manager exactly (see reference screenshots). Items with an
+// `action` are wired; the rest are shown faithfully but disabled (grey), just as
+// Swiss-Manager greys out items that don't yet apply.
 const MENUS = [
   ["File", [
-    { label: "New tournament…", acc: "Ctrl+N", action: "new" },
-    { label: "Load tournament…", acc: "F3", action: "open" },
-    { label: "Save tournament", acc: "Ctrl+S" },
+    { label: "New tournament...", acc: "Strg+N", action: "new" },
+    { label: "Load tournament...", acc: "F3", action: "open" },
+    { label: "Save tournament", acc: "Strg+S" },
+    { label: "Save tournament as..." },
+    { label: "Merge tournament" },
+    { label: "Backup tournament" },
     { sep: true },
     { label: "Import FIDE Data Format TRF16" },
-    { label: "XML-Import" },
-    { label: "XML-Export" },
+    { label: "XML-Import ▸" },
+    { label: "XML-Export ▸" },
+    { label: "Export TRF...", action: "export" },
+    { label: "Import PGN-File" },
+    { label: "Import PGN-File (Results)" },
     { sep: true },
-    { label: "Export TRF…", action: "export" },
+    { label: "Notepad..." },
+    { label: "Printer setup..." },
+    { label: "Last tournaments read ▸" },
+    { sep: true },
     { label: "Exit" },
   ]],
   ["Input", [
-    { label: "Enter players…", action: "players" },
-    { label: "Tournament data…", action: "players" },
+    { label: "Enter players...", action: "players" },
+    { label: "Update players...", acc: "Strg+F6", action: "players" },
+    { label: "Enter results...", acc: "F7", action: "results" },
+    { label: "Set up tournament...", action: "setup" },
+    { label: "Enter teams..." },
+    { label: "Enter round dates and times..." },
+    { label: "Enter dates for player pairings..." },
+    { sep: true },
+    { label: "Resort starting rank list", action: "resort" },
+    { label: "Resort pairing list" },
+    { label: "Remove players" },
   ]],
   ["Pairings", [
-    { label: "Pairings / Results (current round)", action: "pairings" },
-    { label: "Generate next round", action: "generate" },
+    { label: "Computer pairings...", acc: "F6", action: "computerPairings" },
+    { label: "Set new player..." },
+    { label: "Manual pairings..." },
+    { label: "Exclude player...", action: "exclude" },
+    { label: "Give player bye", action: "givebye" },
+    { label: "Reactivate player...", action: "reactivate" },
+    { label: "Forbidden pairings..." },
   ]],
-  ["Reports", [{ label: "Startrank list", action: "players" }, { label: "Ranking crosstable", action: "standings" }]],
-  ["Output", [{ label: "Export TRF…", action: "export" }]],
+  ["Reports", [
+    { label: "Rating list(s)...", acc: "F4" },
+    { label: "Tournament status", action: "status" },
+    { sep: true },
+    { label: "Players", acc: "F11", action: "players" },
+    { label: "Byes" },
+    { label: "Exclusions" },
+    { sep: true },
+    { label: "Title statistics" },
+    { label: "Federation statistics" },
+    { label: "Game statistics" },
+    { sep: true },
+    { label: "Rating statistics FIDE" },
+    { label: "FIDE title info" },
+    { label: "FIDE Tournament Report - IT3" },
+    { label: "FA Norm Report - FA1" },
+    { label: "IA Norm Report - IA1" },
+  ]],
+  ["Output", [
+    { label: "✓ Screen", acc: "Umsch+F2" },
+    { label: "Printer", acc: "F2" },
+    { label: "File", acc: "Umsch+F3" },
+    { sep: true },
+    { label: "✓ Print parameters" },
+    { label: "Output several lists" },
+  ]],
   ["Round", [
-    { label: "Enter results…", action: "results" },
-    { label: "Next round", action: "generate" },
+    { label: "Select round ▸", action: "rounds" },
   ]],
-  ["Lists", [{ label: "Ranking", action: "standings" }, { label: "Players", action: "players" }]],
-  ["Other", [{ label: "Install…" }]],
-  ["Rating Lists", [{ label: "FIDE" }]],
-  ["Internet", [{ label: "Upload to chess-results" }]],
-  ["Windows", [{ label: "Cascade" }]],
+  ["Lists", [
+    { label: "Alphabetical", action: "list:alphabetical" },
+    { label: "Starting rank", acc: "Strg+B", action: "list:startrank" },
+    { label: "Standings", acc: "F5", action: "standings" },
+    { sep: true },
+    { label: "Pairings", acc: "F10", action: "pairings" },
+    { label: "Results", acc: "F9", action: "pairings" },
+    { sep: true },
+    { label: "Starting rank crosstable", action: "list:startcross" },
+    { label: "Ranking crosstable", action: "list:rankcross" },
+    { sep: true },
+    { label: "Match cards" },
+    { label: "Match cards (Excel)" },
+    { label: "Category prizes" },
+    { label: "Board", acc: "F8" },
+    { label: "Pairings checklist", acc: "Umsch+F12" },
+    { label: "FIDE..." },
+  ]],
+  ["Other", [{ label: "Install..." }]],
+  ["Rating Lists", [
+    { label: "Import rating lists" },
+    { label: "Update FIDE rating list" },
+    { label: "Update IND rating list" },
+  ]],
+  ["Internet", [
+    { label: "Swiss-Manager Homepage" },
+    { label: "Chess-Results.com Homepage" },
+    { label: "✓ Restrict tournament upload to file creator" },
+    { label: "Upload tournament to Chess-Results.com" },
+    { label: "Download tournament from Chess-Results.com" },
+    { label: "Check for Swiss-Manager Update" },
+  ]],
+  ["Windows", [{ label: "Cascade" }, { label: "Tile" }]],
   ["Help", [{ label: "About Swiss-Manager (Web)" }]],
 ];
 
@@ -58,7 +133,7 @@ export default function MenuBar({ onAction }) {
               {items.map((it, i) => it.sep
                 ? <div key={i} className="sep" />
                 : <div key={i} className={"row" + (it.action ? "" : " disabled")}
-                       onClick={() => { if (it.action) { onAction(it.action); } setOpen(null); }}>
+                       onClick={() => { if (it.action) onAction(it.action); setOpen(null); }}>
                     <span>{it.label}</span>{it.acc && <span className="acc">{it.acc}</span>}
                   </div>)}
             </div>
