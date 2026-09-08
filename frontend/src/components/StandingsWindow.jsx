@@ -57,4 +57,5 @@ export default function StandingsWindow({ tournament, onClose, notify }) {
     </div>
   );
 }
-const fmt = (v) => (v === null || v === undefined) ? "" : (Number.isInteger(v) ? v : (+v).toFixed(1));
+const fmt = (v) => (v === null || v === undefined) ? ""
+  : (Number.isInteger(v) ? String(v) : (+v).toFixed(2).replace(/\.?0+$/, ""));

@@ -1,0 +1,6 @@
+# Root requirements file -- installed by Vercel's @vercel/python runtime
+# for the serverless function in api/index.py.
+py4swiss==0.3.1
+flask>=3.0
+flask-cors>=4.0
+openpyxl>=3.1

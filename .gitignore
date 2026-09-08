@@ -1,0 +1,23 @@
+# Python
+backend/.venv/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Node
+node_modules/
+frontend/dist/
+
+# Local database (not deployable state)
+*.db
+*.sqlite
+*.sqlite3
+
+# Vercel
+.vercel/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
