@@ -1,77 +1,135 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../api.js";
+import Button from "./ui/Button.jsx";
+import { Segmented } from "./ui/Field.jsx";
 
-const TITLES = {
-  alphabetical: "Alphabetical list",
-  startrank: "Starting rank list",
-  startcross: "Starting rank crosstable",
-  rankcross: "Ranking crosstable",
+const MODES = [
+  ["alphabetical", "Alphabetical"],
+  ["startrank", "Starting rank"],
+  ["startcross", "Rank crosstable"],
+  ["rankcross", "Ranking crosstable"],
+];
+const TITLES = Object.fromEntries(MODES);
+
+const SCORE_CHAR = {
+  "1-0": ["1", "0"], "0-1": ["0", "1"], "0.5-0.5": ["½", "½"],
+  "1-0F": ["+", "-"], "0-1F": ["-", "+"], "0-0": ["-", "-"],
 };
-const SCORE_CHAR = { "1-0": ["1", "0"], "0-1": ["0", "1"], "0.5-0.5": ["½", "½"],
-  "1-0F": ["+", "-"], "0-1F": ["-", "+"], "0-0": ["-", "-"] };
 
-export default function ListsWindow({ tournament, mode, onClose, notify }) {
+export default function ListsWindow({ tournament, mode, setMode, notify }) {
   const [rounds, setRounds] = useState(null);
   const [standings, setStandings] = useState(null);
   const isCross = mode === "startcross" || mode === "rankcross";
+  const tid = tournament.id;
 
-  useEffect(() => { (async () => {
-    try {
-      if (isCross) {
-        const rs = await Promise.all(tournament.rounds.map(r => api.getRound(tournament.id, r.number)));
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!isCross) return;
+      setRounds(null);
+      try {
+        const rs = await Promise.all(tournament.rounds.map(r => api.getRound(tid, r.number)));
+        if (!alive) return;
         setRounds(rs);
-        if (mode === "rankcross") setStandings(await api.standings(tournament.id));
-      }
-    } catch (e) { notify(e.message, true); }
-  })(); /* eslint-disable-next-line */ }, [mode, tournament]);
+        if (mode === "rankcross") {
+          const s = await api.standings(tid);
+          if (alive) setStandings(s);
+        }
+      } catch (e) { notify(e.message, true); }
+    })();
+    return () => { alive = false; };
+  }, [tid, mode, isCross, tournament.rounds, notify]);
 
   const players = [...tournament.players];
   if (mode === "alphabetical") players.sort((a, b) => a.name.localeCompare(b.name));
   else players.sort((a, b) => a.start_no - b.start_no);
 
   return (
-    <div className="window">
-      <div className="wtitle"><span>{TITLES[mode]} — {tournament.name}</span>
-        <span className="btns"><span className="wb" onClick={onClose}>✕</span></span></div>
-      <div className="wbody">
+    <div className="card">
+      <div className="card-head">
+        <div>
+          <div className="ttl">{TITLES[mode] || "Lists"}</div>
+          <div className="sub">{tournament.name}</div>
+        </div>
+        <div className="spacer" />
+        <span className="pill">{tournament.players.length} players</span>
+      </div>
+
+      <div className="toolstrip">
+        <Segmented ariaLabel="List type" options={MODES} value={mode} onChange={setMode} />
+      </div>
+
+      <div className="card-body flush">
         {!isCross && (
-          <table className="grid">
-            <thead><tr><th className="num" style={{ width: 46 }}>{mode === "startrank" ? "SNo." : "No."}</th>
-              <th>Name</th><th className="ctr" style={{ width: 50 }}>FED</th><th className="num" style={{ width: 60 }}>Rtg</th>
-              <th className="ctr" style={{ width: 44 }}>sex</th><th>Club/City</th></tr></thead>
-            <tbody>
-              {players.map((p, i) => (
-                <tr key={p.start_no}><td className="num">{mode === "startrank" ? p.start_no : i + 1}</td>
-                  <td>{p.name}</td><td className="ctr">{p.federation || ""}</td><td className="num">{p.rating || ""}</td>
-                  <td className="ctr">{p.sex || ""}</td><td>{p.club || ""}</td></tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="tablewrap">
+            <table className="grid">
+              <thead>
+                <tr>
+                  <th className="num" style={{ width: 56 }}>{mode === "startrank" ? "No." : "#"}</th>
+                  <th>Name</th>
+                  <th className="ctr" style={{ width: 64 }}>FED</th>
+                  <th className="num" style={{ width: 72 }}>Rating</th>
+                  <th className="ctr" style={{ width: 54 }}>Sex</th>
+                  <th>Club / City</th>
+                </tr>
+              </thead>
+              <tbody>
+                {players.map((p, i) => (
+                  <tr key={p.start_no}>
+                    <td className="num"><span className="seedno">{mode === "startrank" ? p.start_no : i + 1}</span></td>
+                    <td>{p.name}</td>
+                    <td className="ctr">{p.federation || ""}</td>
+                    <td className="num">{p.rating || ""}</td>
+                    <td className="ctr">{p.sex || ""}</td>
+                    <td>{p.club || ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
-        {isCross && !rounds && <div>Loading crosstable…</div>}
-        {isCross && rounds && <Crosstable tournament={tournament} rounds={rounds} mode={mode} standings={standings} />}
-        <div style={{ marginTop: 10 }}><button className="btn" onClick={() => window.print()}>Print</button></div>
+        {isCross && !rounds && <div className="empty">Building crosstable…</div>}
+        {isCross && rounds && (
+          <Crosstable tournament={tournament} rounds={rounds} mode={mode} standings={standings} />
+        )}
+      </div>
+
+      <div className="card-foot">
+        <Button icon="printer" onClick={() => window.print()}>Print</Button>
+        {isCross && (
+          <span className="hint" style={{ marginLeft: "auto" }}>
+            Cell = opponent no. + colour (w/b) + result. “· 1” = bye.
+          </span>
+        )}
       </div>
     </div>
   );
 }
 
 function Crosstable({ tournament, rounds, mode, standings }) {
-  // Map: start_no -> { roundNumber -> cell }
+  // start_no -> { roundNumber -> cell }
   const byPlayer = {};
-  const snoName = {}; tournament.players.forEach(p => { snoName[p.start_no] = p; byPlayer[p.start_no] = {}; });
+  const snoName = {};
+  tournament.players.forEach(p => { snoName[p.start_no] = p; byPlayer[p.start_no] = {}; });
+
+  // Games are stored by start number. A roster edit can leave a finalized round
+  // pointing at a number that no longer exists, so only record cells for players
+  // still on the roster rather than indexing into undefined.
   rounds.forEach(r => {
     r.boards.forEach(b => {
-      if (b.is_bye) { byPlayer[b.white_sno][r.number] = { bye: true }; return; }
+      if (b.is_bye) {
+        if (byPlayer[b.white_sno]) byPlayer[b.white_sno][r.number] = { bye: true };
+        return;
+      }
       const [ws, bs] = SCORE_CHAR[b.result] || ["", ""];
-      byPlayer[b.white_sno][r.number] = { opp: b.black_sno, color: "w", s: ws };
-      byPlayer[b.black_sno][r.number] = { opp: b.white_sno, color: "b", s: bs };
+      if (byPlayer[b.white_sno]) byPlayer[b.white_sno][r.number] = { opp: b.black_sno, color: "w", s: ws };
+      if (byPlayer[b.black_sno]) byPlayer[b.black_sno][r.number] = { opp: b.white_sno, color: "b", s: bs };
     });
   });
 
   let order = [...tournament.players].sort((a, b) => a.start_no - b.start_no);
-  let rankOf = {};
+  const rankOf = {};
   if (mode === "rankcross" && standings) {
     order = standings.standings.map(s => snoName[s.start_no]).filter(Boolean);
     standings.standings.forEach(s => { rankOf[s.start_no] = { rank: s.rank, pts: s.points }; });
@@ -79,26 +137,30 @@ function Crosstable({ tournament, rounds, mode, standings }) {
   const rnums = rounds.map(r => r.number);
 
   return (
-    <div style={{ overflowX: "auto" }}>
+    <div className="tablewrap">
       <table className="grid">
         <thead>
           <tr>
-            <th className="num" style={{ width: 34 }}>{mode === "rankcross" ? "Rk." : "SNo."}</th>
-            <th>Name</th><th className="num" style={{ width: 54 }}>Rtg</th>
-            {rnums.map(n => <th key={n} className="ctr" style={{ width: 52 }}>{n}</th>)}
-            <th className="num" style={{ width: 46 }}>Pts</th>
+            <th className="num" style={{ width: 48 }}>{mode === "rankcross" ? "Rk." : "No."}</th>
+            <th>Name</th>
+            <th className="num" style={{ width: 66 }}>Rating</th>
+            {rnums.map(n => <th key={n} className="ctr" style={{ width: 58 }}>{n}</th>)}
+            <th className="num" style={{ width: 56 }}>Pts</th>
           </tr>
         </thead>
         <tbody>
           {order.map((p, i) => (
             <tr key={p.start_no}>
-              <td className="num">{mode === "rankcross" ? (rankOf[p.start_no]?.rank ?? i + 1) : p.start_no}</td>
-              <td>{p.name}</td><td className="num">{p.rating || ""}</td>
+              <td className="num">
+                <span className={"seedno" + (mode === "rankcross" && rankOf[p.start_no]?.rank <= 3 ? ` rank${rankOf[p.start_no].rank}` : "")}>
+                  {mode === "rankcross" ? (rankOf[p.start_no]?.rank ?? i + 1) : p.start_no}
+                </span>
+              </td>
+              <td>{p.name}</td>
+              <td className="num">{p.rating || ""}</td>
               {rnums.map(n => {
                 const c = byPlayer[p.start_no]?.[n];
-                let txt = "";
-                if (c?.bye) txt = "· 1";
-                else if (c) txt = `${c.opp}${c.color}${c.s}`;
+                const txt = c?.bye ? "· 1" : c ? `${c.opp}${c.color}${c.s}` : "";
                 return <td key={n} className="ctr mono">{txt}</td>;
               })}
               <td className="num"><b>{rankOf[p.start_no] ? fmt(rankOf[p.start_no].pts) : ""}</b></td>
@@ -106,8 +168,8 @@ function Crosstable({ tournament, rounds, mode, standings }) {
           ))}
         </tbody>
       </table>
-      <p className="hint" style={{ marginTop: 6 }}>Cell = opponent SNo. + colour (w/b) + result (1 / ½ / 0). “· 1” = bye.</p>
     </div>
   );
 }
+
 const fmt = (v) => v == null ? "" : (Number.isInteger(v) ? v : (+v).toFixed(1));

@@ -1,4 +1,4 @@
-// API client for the Swiss-Manager Flask backend.
+// API client for the Chess Pairing Manager Flask backend.
 // Works however you run the UI:
 //   - served by Flask on :5000  -> same-origin /api
 //   - Vite dev server on :5173  -> talk to Flask directly (CORS is enabled)

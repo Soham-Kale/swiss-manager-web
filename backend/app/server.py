@@ -82,6 +82,9 @@ def _tournament_dto(conn, tid):
     d = dict(t)
     d["first_board_white"] = bool(d["first_board_white"])
     d["tiebreaks"] = loads(d["tiebreaks"], [])
+    # The scheduled number of rounds, kept under its own key because d["rounds"]
+    # below overwrites the scalar column with the list of played rounds.
+    d["total_rounds"] = t["rounds"]
     d["players"] = [dict(p) for p in conn.execute(
         "SELECT * FROM players WHERE tid=? ORDER BY start_no", (tid,))]
     d["rounds"] = [dict(r) for r in conn.execute(

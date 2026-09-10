@@ -1,12 +1,12 @@
-# Swiss-Manager (Web) — React + Flask
+# Chess Pairing Manager — React + Flask
 
-A web re-creation of the Swiss-Manager desktop workflow: **create tournament →
-enter players → generate pairings → enter results → standings**, with the
-FIDE **Dutch-system** pairing engine (py4swiss) on the backend.
+Run a Swiss-system chess tournament end to end: **create tournament → enter
+players → generate pairings → enter results → standings**, with the FIDE
+**Dutch-system** pairing engine (py4swiss) on the backend.
 
-- **Frontend:** React + Vite (JavaScript), styled to look like Swiss-Manager
-  (menu bar, toolbar, tabbed "Tournament Data" dialog, pairings sheet, results
-  pad, ranking).
+- **Frontend:** React + Vite, with a sidebar workflow (Setup → Players →
+  Pairings → Results → Standings → Lists), a command palette (Ctrl/Cmd-K) for
+  every action, and light/dark theming.
 - **Backend:** Python **Flask** + **SQLite**, wrapping the pairing engine.
 
 ## Run it
@@ -19,9 +19,15 @@ pip install -r requirements.txt
 flask --app app.server run --port 5000
 ```
 
-### 2a. Quick start (no Node needed)
-A pre-built UI ships in `frontend/dist`, and the backend serves it. Just open
-**http://127.0.0.1:5000/** after starting the backend.
+### 2a. Quick start (serve the built UI)
+`frontend/dist` is not committed to the repo (see `.gitignore`), so build it
+once and Flask will serve it:
+```bash
+cd frontend
+npm install
+npm run build
+```
+Then open **http://127.0.0.1:5000/** after starting the backend.
 
 ### 2b. Develop the UI (hot reload)
 ```bash
@@ -34,22 +40,27 @@ server serves the latest.
 
 > Requires Python 3.10+ and (for UI dev) Node 18+.
 
-## How to use (mirrors Swiss-Manager)
+## How to use
 
-1. **File ▸ New tournament** → pick *Swiss System* → fill the **Tournament Data**
-   dialog (General + **Tiebreaks** tabs) → **OK**.
-2. **Enter players** window: type the roster or **Import** an Excel/CSV/Chess-
-   Results/JSON file. **Save** — seeds (No.) are assigned by rating automatically.
-3. **Generate Round 1** (or Pairings ▸ Generate next round). The **Pairings/
-   Results** sheet shows Bo./SNo./White/Pts/Res./Pts/Black/SNo.
-4. **Enter results…** — click a board, click a result (1:0, ½:½, 0:1, forfeits).
-   Save finalizes the round when every board has a result.
-5. **Generate next round**, repeat. **Lists ▸ Ranking** shows standings with your
-   chosen tiebreaks. **Output ▸ Export TRF** downloads the FIDE file.
+1. **New tournament** (top bar, or Ctrl/Cmd-K → "New tournament...") → fill the
+   **General** and **Tiebreaks** tabs → **Create**.
+2. **Players** step: type the roster or drop in an Excel/CSV/Chess-Results/JSON
+   file. **Save** — starting numbers are assigned by rating automatically.
+3. **Generate round 1** (from the Players card, or the Pairings step). The
+   pairings sheet shows board / no. / player / points / result for both sides.
+4. **Enter results** — click a quick-result button on a row, or use the result
+   pad for forfeits and arbiter codes. Saving finalizes the round once every
+   board has a result.
+5. **Generate the next round**, repeat. **Standings** shows the ranking with
+   your chosen tiebreaks; **Lists** has the roster and both crosstables.
+   The top bar's export button downloads the FIDE TRF file.
+
+Every command from the original desktop-style menu (including items not yet
+wired to real behaviour) is still reachable through the command palette —
+open it from the top bar or with Ctrl/Cmd-K.
 
 ## Project layout
 ```
-swiss-manager-web/
 ├── backend/
 │   ├── app/
 │   │   ├── server.py       # Flask API (/api/*) + serves the built UI
@@ -62,9 +73,15 @@ swiss-manager-web/
 │   ├── src/
 │   │   ├── App.jsx         # app shell + view routing
 │   │   ├── api.js          # backend client
-│   │   └── components/     # MenuBar, Toolbar, dialogs, windows
-│   ├── dist/               # pre-built UI (served by Flask)
-│   ├── index.html, package.json, vite.config.js
+│   │   ├── brand.js        # product name, in one place
+│   │   ├── styles.css      # design tokens + component styles
+│   │   └── components/
+│   │       ├── ui/         # Button, Modal, Field, Toast, Icon
+│   │       ├── TopBar.jsx, Sidebar.jsx, CommandMenu.jsx
+│   │       └── PlayersWindow, PairingsWindow, ResultsWindow,
+│   │           StandingsWindow, ListsWindow, dialogs
+│   ├── dist/               # build output (gitignored — run `npm run build`)
+│   └── index.html, package.json, vite.config.js
 └── README.md
 ```
 
@@ -75,9 +92,15 @@ swiss-manager-web/
 · `POST /api/tournaments/:id/rounds/:n/results` · `.../finalize`
 · `GET /api/tournaments/:id/standings` · `GET /api/tournaments/:id/export/trf`
 
+Full request/response payloads, the SQL schema (current + a minimal
+from-scratch version), and the domain rules a backend must enforce are in
+**[docs/API.md](docs/API.md)** — the reference for anyone implementing or
+porting the backend.
+
 ## Notes
-- Round 1 is seeded by the **No.** order (rating). Later rounds are paired by the
-  Dutch engine from the entered results — no rematches, correct colours and byes.
+- Round 1 is seeded by rating. Later rounds are paired by the Dutch engine from
+  the entered results — no rematches, correct colours and byes.
 - Tiebreaks currently computed: Buchholz, Buchholz Cut-1, Sonneborn-Berger,
-  Number of Wins (the standard Swiss set); the dialog lets you order them.
+  Number of Wins; the tournament dialog lets you pick and order them, including
+  labels for tiebreaks this build doesn't compute yet.
 - Auth is omitted for this build; add your existing auth when integrating.
